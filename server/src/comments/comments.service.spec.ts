@@ -1,12 +1,27 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CommentsService } from './comments.service.js';
+import { PrismaService } from '../prisma.service.js';
 
 describe('CommentsService', () => {
   let service: CommentsService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [CommentsService],
+      providers: [
+        CommentsService,
+        {
+          provide: PrismaService,
+          useValue: {
+            comment: {
+              findUnique: vi.fn(),
+              create: vi.fn(),
+              findMany: vi.fn(),
+              count: vi.fn(),
+            },
+            $transaction: vi.fn(),
+          },
+        },
+      ],
     }).compile();
 
     service = module.get<CommentsService>(CommentsService);
