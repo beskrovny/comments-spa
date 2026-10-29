@@ -1,0 +1,45 @@
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  userName  String   @map("user_name") @db.VarChar(100)
+  email     String   @db.VarChar(254)
+  homePage  String?  @map("home_page") @db.VarChar(255)
+  text      String   @db.Text
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  parentId Int?     @map("parent_id")
+  parent   Comment? @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies  Comment[] @relation("CommentReplies")
+
+  attachments Attachment[]
+
+  @@index([parentId, createdAt])
+  @@index([createdAt])
+  @@index([userName])
+  @@index([email])
+  @@map("comments")
+}
+
+model Attachment {
+  id           Int      @id @default(autoincrement())
+  commentId    Int      @map("comment_id")
+  originalName String   @map("original_name") @db.VarChar(255)
+  storedName   String   @unique @map("stored_name") @db.VarChar(255)
+  mimeType     String   @map("mime_type") @db.VarChar(100)
+  sizeBytes    Int      @map("size_bytes")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@index([commentId])
+  @@map("attachments")
+}

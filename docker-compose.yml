@@ -1,0 +1,22 @@
+
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: comments-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: comments_user
+      POSTGRES_PASSWORD: comments_password
+      POSTGRES_DB: comments_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U comments_user -d comments_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
