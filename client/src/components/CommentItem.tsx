@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { Comment } from '../types/comment';
 import CommentForm from './CommentForm';
 import type { CommentFormValues } from '../schemas/commentSchema';
+import CommentContent from './CommentContent';
 
 interface CommentItemProps {
   comment: Comment;
@@ -25,7 +26,7 @@ function CommentItem({
     <article className="comment">
       <h3>{comment.userName}</h3>
 
-      <p>{comment.text}</p>
+      <CommentContent text={comment.text} />
 
       <time dateTime={comment.createdAt}>
         {new Date(comment.createdAt).toLocaleString()}

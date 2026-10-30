@@ -5,6 +5,7 @@ import {
     commentSchema,
     type CommentFormValues,
 } from '../schemas/commentSchema';
+import CommentContent from './CommentContent';
 
 interface CommentFormProps {
     parentId?: number;
@@ -196,7 +197,7 @@ function CommentForm({
                 {showPreview && (
                     <div className="comment-preview">
                         <h4>Предпросмотр</h4>
-                        <pre>{commentText}</pre>
+                        <CommentContent text={commentText} />
                     </div>
                 )}
 
