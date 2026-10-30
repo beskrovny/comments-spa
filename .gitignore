@@ -5,3 +5,8 @@ coverage/
 *.log
 .DS_Store
 Thumbs.db
+# Environment files
+.env
+.env.*
+!.env.example
+task.md
