@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import sanitizeHtml from 'sanitize-html';
 import { PrismaService } from '../prisma.service.js';
 import { CreateCommentDto } from './create-comment.dto.js';
 
@@ -25,13 +26,27 @@ export class CommentsService {
       }
     }
 
+    const sanitizedText = sanitizeHtml(dto.text, {
+      allowedTags: ['i', 'strong', 'code', 'a'],
+      allowedAttributes: {
+        a: ['href', 'title'],
+      },
+      allowedSchemes: ['http', 'https'],
+      allowedSchemesAppliedToAttributes: ['href'],
+      exclusiveFilter: (frame) => ['script', 'style'].includes(frame.tag),
+    }).trim();
+
+    if (!sanitizedText) {
+      throw new BadRequestException('Comment must contain text');
+    }
+
     try {
       return await this.prisma.comment.create({
         data: {
           userName: dto.userName,
           email: dto.email,
           homePage: dto.homePage,
-          text: dto.text,
+          text: sanitizedText,
           parentId: dto.parentId,
         },
       });
@@ -78,9 +93,7 @@ export class CommentsService {
     }
 
     for (const comment of allReplies) {
-      const parent = comment.parentId
-        ? nodes.get(comment.parentId)
-        : undefined;
+      const parent = comment.parentId ? nodes.get(comment.parentId) : undefined;
 
       const node = nodes.get(comment.id);
 
