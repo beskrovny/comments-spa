@@ -91,7 +91,8 @@ export const AttachmentScalarFieldEnum = {
   storedName: 'storedName',
   mimeType: 'mimeType',
   sizeBytes: 'sizeBytes',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  data: 'data'
 } as const
 
 export type AttachmentScalarFieldEnum = (typeof AttachmentScalarFieldEnum)[keyof typeof AttachmentScalarFieldEnum]

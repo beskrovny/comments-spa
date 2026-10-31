@@ -46,6 +46,7 @@ export type AttachmentMinAggregateOutputType = {
   mimeType: string | null
   sizeBytes: number | null
   createdAt: Date | null
+  data: runtime.Bytes | null
 }
 
 export type AttachmentMaxAggregateOutputType = {
@@ -56,6 +57,7 @@ export type AttachmentMaxAggregateOutputType = {
   mimeType: string | null
   sizeBytes: number | null
   createdAt: Date | null
+  data: runtime.Bytes | null
 }
 
 export type AttachmentCountAggregateOutputType = {
@@ -66,6 +68,7 @@ export type AttachmentCountAggregateOutputType = {
   mimeType: number
   sizeBytes: number
   createdAt: number
+  data: number
   _all: number
 }
 
@@ -90,6 +93,7 @@ export type AttachmentMinAggregateInputType = {
   mimeType?: true
   sizeBytes?: true
   createdAt?: true
+  data?: true
 }
 
 export type AttachmentMaxAggregateInputType = {
@@ -100,6 +104,7 @@ export type AttachmentMaxAggregateInputType = {
   mimeType?: true
   sizeBytes?: true
   createdAt?: true
+  data?: true
 }
 
 export type AttachmentCountAggregateInputType = {
@@ -110,6 +115,7 @@ export type AttachmentCountAggregateInputType = {
   mimeType?: true
   sizeBytes?: true
   createdAt?: true
+  data?: true
   _all?: true
 }
 
@@ -207,6 +213,7 @@ export type AttachmentGroupByOutputType = {
   mimeType: string
   sizeBytes: number
   createdAt: Date
+  data: runtime.Bytes
   _count: AttachmentCountAggregateOutputType | null
   _avg: AttachmentAvgAggregateOutputType | null
   _sum: AttachmentSumAggregateOutputType | null
@@ -240,6 +247,7 @@ export type AttachmentWhereInput = {
   mimeType?: Prisma.StringFilter<"Attachment"> | string
   sizeBytes?: Prisma.IntFilter<"Attachment"> | number
   createdAt?: Prisma.DateTimeFilter<"Attachment"> | Date | string
+  data?: Prisma.BytesFilter<"Attachment"> | runtime.Bytes
   comment?: Prisma.XOR<Prisma.CommentScalarRelationFilter, Prisma.CommentWhereInput>
 }
 
@@ -251,6 +259,7 @@ export type AttachmentOrderByWithRelationInput = {
   mimeType?: Prisma.SortOrder
   sizeBytes?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  data?: Prisma.SortOrder
   comment?: Prisma.CommentOrderByWithRelationInput
 }
 
@@ -265,6 +274,7 @@ export type AttachmentWhereUniqueInput = Prisma.AtLeast<{
   mimeType?: Prisma.StringFilter<"Attachment"> | string
   sizeBytes?: Prisma.IntFilter<"Attachment"> | number
   createdAt?: Prisma.DateTimeFilter<"Attachment"> | Date | string
+  data?: Prisma.BytesFilter<"Attachment"> | runtime.Bytes
   comment?: Prisma.XOR<Prisma.CommentScalarRelationFilter, Prisma.CommentWhereInput>
 }, "id" | "storedName">
 
@@ -276,6 +286,7 @@ export type AttachmentOrderByWithAggregationInput = {
   mimeType?: Prisma.SortOrder
   sizeBytes?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  data?: Prisma.SortOrder
   _count?: Prisma.AttachmentCountOrderByAggregateInput
   _avg?: Prisma.AttachmentAvgOrderByAggregateInput
   _max?: Prisma.AttachmentMaxOrderByAggregateInput
@@ -294,6 +305,7 @@ export type AttachmentScalarWhereWithAggregatesInput = {
   mimeType?: Prisma.StringWithAggregatesFilter<"Attachment"> | string
   sizeBytes?: Prisma.IntWithAggregatesFilter<"Attachment"> | number
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Attachment"> | Date | string
+  data?: Prisma.BytesWithAggregatesFilter<"Attachment"> | runtime.Bytes
 }
 
 export type AttachmentCreateInput = {
@@ -302,6 +314,7 @@ export type AttachmentCreateInput = {
   mimeType: string
   sizeBytes: number
   createdAt?: Date | string
+  data: runtime.Bytes
   comment: Prisma.CommentCreateNestedOneWithoutAttachmentsInput
 }
 
@@ -313,6 +326,7 @@ export type AttachmentUncheckedCreateInput = {
   mimeType: string
   sizeBytes: number
   createdAt?: Date | string
+  data: runtime.Bytes
 }
 
 export type AttachmentUpdateInput = {
@@ -321,6 +335,7 @@ export type AttachmentUpdateInput = {
   mimeType?: Prisma.StringFieldUpdateOperationsInput | string
   sizeBytes?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  data?: Prisma.BytesFieldUpdateOperationsInput | runtime.Bytes
   comment?: Prisma.CommentUpdateOneRequiredWithoutAttachmentsNestedInput
 }
 
@@ -332,6 +347,7 @@ export type AttachmentUncheckedUpdateInput = {
   mimeType?: Prisma.StringFieldUpdateOperationsInput | string
   sizeBytes?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  data?: Prisma.BytesFieldUpdateOperationsInput | runtime.Bytes
 }
 
 export type AttachmentCreateManyInput = {
@@ -342,6 +358,7 @@ export type AttachmentCreateManyInput = {
   mimeType: string
   sizeBytes: number
   createdAt?: Date | string
+  data: runtime.Bytes
 }
 
 export type AttachmentUpdateManyMutationInput = {
@@ -350,6 +367,7 @@ export type AttachmentUpdateManyMutationInput = {
   mimeType?: Prisma.StringFieldUpdateOperationsInput | string
   sizeBytes?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  data?: Prisma.BytesFieldUpdateOperationsInput | runtime.Bytes
 }
 
 export type AttachmentUncheckedUpdateManyInput = {
@@ -360,6 +378,7 @@ export type AttachmentUncheckedUpdateManyInput = {
   mimeType?: Prisma.StringFieldUpdateOperationsInput | string
   sizeBytes?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  data?: Prisma.BytesFieldUpdateOperationsInput | runtime.Bytes
 }
 
 export type AttachmentListRelationFilter = {
@@ -380,6 +399,7 @@ export type AttachmentCountOrderByAggregateInput = {
   mimeType?: Prisma.SortOrder
   sizeBytes?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  data?: Prisma.SortOrder
 }
 
 export type AttachmentAvgOrderByAggregateInput = {
@@ -396,6 +416,7 @@ export type AttachmentMaxOrderByAggregateInput = {
   mimeType?: Prisma.SortOrder
   sizeBytes?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  data?: Prisma.SortOrder
 }
 
 export type AttachmentMinOrderByAggregateInput = {
@@ -406,6 +427,7 @@ export type AttachmentMinOrderByAggregateInput = {
   mimeType?: Prisma.SortOrder
   sizeBytes?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  data?: Prisma.SortOrder
 }
 
 export type AttachmentSumOrderByAggregateInput = {
@@ -456,12 +478,17 @@ export type AttachmentUncheckedUpdateManyWithoutCommentNestedInput = {
   deleteMany?: Prisma.AttachmentScalarWhereInput | Prisma.AttachmentScalarWhereInput[]
 }
 
+export type BytesFieldUpdateOperationsInput = {
+  set?: runtime.Bytes
+}
+
 export type AttachmentCreateWithoutCommentInput = {
   originalName: string
   storedName: string
   mimeType: string
   sizeBytes: number
   createdAt?: Date | string
+  data: runtime.Bytes
 }
 
 export type AttachmentUncheckedCreateWithoutCommentInput = {
@@ -471,6 +498,7 @@ export type AttachmentUncheckedCreateWithoutCommentInput = {
   mimeType: string
   sizeBytes: number
   createdAt?: Date | string
+  data: runtime.Bytes
 }
 
 export type AttachmentCreateOrConnectWithoutCommentInput = {
@@ -510,6 +538,7 @@ export type AttachmentScalarWhereInput = {
   mimeType?: Prisma.StringFilter<"Attachment"> | string
   sizeBytes?: Prisma.IntFilter<"Attachment"> | number
   createdAt?: Prisma.DateTimeFilter<"Attachment"> | Date | string
+  data?: Prisma.BytesFilter<"Attachment"> | runtime.Bytes
 }
 
 export type AttachmentCreateManyCommentInput = {
@@ -519,6 +548,7 @@ export type AttachmentCreateManyCommentInput = {
   mimeType: string
   sizeBytes: number
   createdAt?: Date | string
+  data: runtime.Bytes
 }
 
 export type AttachmentUpdateWithoutCommentInput = {
@@ -527,6 +557,7 @@ export type AttachmentUpdateWithoutCommentInput = {
   mimeType?: Prisma.StringFieldUpdateOperationsInput | string
   sizeBytes?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  data?: Prisma.BytesFieldUpdateOperationsInput | runtime.Bytes
 }
 
 export type AttachmentUncheckedUpdateWithoutCommentInput = {
@@ -536,6 +567,7 @@ export type AttachmentUncheckedUpdateWithoutCommentInput = {
   mimeType?: Prisma.StringFieldUpdateOperationsInput | string
   sizeBytes?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  data?: Prisma.BytesFieldUpdateOperationsInput | runtime.Bytes
 }
 
 export type AttachmentUncheckedUpdateManyWithoutCommentInput = {
@@ -545,6 +577,7 @@ export type AttachmentUncheckedUpdateManyWithoutCommentInput = {
   mimeType?: Prisma.StringFieldUpdateOperationsInput | string
   sizeBytes?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  data?: Prisma.BytesFieldUpdateOperationsInput | runtime.Bytes
 }
 
 
@@ -557,6 +590,7 @@ export type AttachmentSelect<ExtArgs extends runtime.Types.Extensions.InternalAr
   mimeType?: boolean
   sizeBytes?: boolean
   createdAt?: boolean
+  data?: boolean
   comment?: boolean | Prisma.CommentDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["attachment"]>
 
@@ -568,6 +602,7 @@ export type AttachmentSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ex
   mimeType?: boolean
   sizeBytes?: boolean
   createdAt?: boolean
+  data?: boolean
   comment?: boolean | Prisma.CommentDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["attachment"]>
 
@@ -579,6 +614,7 @@ export type AttachmentSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ex
   mimeType?: boolean
   sizeBytes?: boolean
   createdAt?: boolean
+  data?: boolean
   comment?: boolean | Prisma.CommentDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["attachment"]>
 
@@ -590,9 +626,10 @@ export type AttachmentSelectScalar = {
   mimeType?: boolean
   sizeBytes?: boolean
   createdAt?: boolean
+  data?: boolean
 }
 
-export type AttachmentOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "commentId" | "originalName" | "storedName" | "mimeType" | "sizeBytes" | "createdAt", ExtArgs["result"]["attachment"]>
+export type AttachmentOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "commentId" | "originalName" | "storedName" | "mimeType" | "sizeBytes" | "createdAt" | "data", ExtArgs["result"]["attachment"]>
 export type AttachmentInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   comment?: boolean | Prisma.CommentDefaultArgs<ExtArgs>
 }
@@ -616,6 +653,7 @@ export type $AttachmentPayload<ExtArgs extends runtime.Types.Extensions.Internal
     mimeType: string
     sizeBytes: number
     createdAt: Date
+    data: runtime.Bytes
   }, ExtArgs["result"]["attachment"]>
   composites: {}
 }
@@ -1047,6 +1085,7 @@ export interface AttachmentFieldRefs {
   readonly mimeType: Prisma.FieldRef<"Attachment", 'String'>
   readonly sizeBytes: Prisma.FieldRef<"Attachment", 'Int'>
   readonly createdAt: Prisma.FieldRef<"Attachment", 'DateTime'>
+  readonly data: Prisma.FieldRef<"Attachment", 'Bytes'>
 }
     
 

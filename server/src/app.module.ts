@@ -5,6 +5,8 @@ import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { CommentsModule } from './comments/comments.module.js';
 import { CaptchaModule } from './captcha/captcha.module.js';
+import { AttachmentsModule } from './attachments/attachments.module.js';
+
 
 @Module({
   imports: [
@@ -12,6 +14,7 @@ import { CaptchaModule } from './captcha/captcha.module.js';
     PrismaModule,
     CommentsModule,
     CaptchaModule,
+    AttachmentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

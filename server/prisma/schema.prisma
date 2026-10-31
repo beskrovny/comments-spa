@@ -15,8 +15,8 @@ model Comment {
   text      String   @db.Text
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
-  parentId Int?     @map("parent_id")
-  parent   Comment? @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  parentId Int?      @map("parent_id")
+  parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
   replies  Comment[] @relation("CommentReplies")
 
   attachments Attachment[]
@@ -36,6 +36,7 @@ model Attachment {
   mimeType     String   @map("mime_type") @db.VarChar(100)
   sizeBytes    Int      @map("size_bytes")
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  data         Bytes    @db.ByteA
 
   comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
 

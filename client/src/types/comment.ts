@@ -7,6 +7,7 @@ export interface Comment {
   createdAt: string;
   parentId: number | null;
   replies?: Comment[];
+  attachments: Attachment[];
 }
 
 export interface CommentsResponse {
@@ -17,8 +18,8 @@ export interface CommentsResponse {
   totalPages: number;
 }
 
-export type CommentSortField = 'userName' | 'email' | 'createdAt';
-export type SortOrder = 'asc' | 'desc';
+export type CommentSortField = "userName" | "email" | "createdAt";
+export type SortOrder = "asc" | "desc";
 
 export interface CreateCommentDto {
   userName: string;
@@ -26,4 +27,14 @@ export interface CreateCommentDto {
   homePage?: string;
   text: string;
   parentId?: number;
+  captchaId: string;
+  captchaAnswer: string;
+}
+
+export interface Attachment {
+  id: number;
+  originalName: string;
+  mimeType: string;
+  sizeBytes: number;
+  createdAt: string;
 }

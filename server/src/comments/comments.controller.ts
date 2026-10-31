@@ -7,17 +7,30 @@ import {
   ParseIntPipe,
   DefaultValuePipe,
   BadRequestException,
+  UploadedFiles,
+  UseInterceptors,
 } from '@nestjs/common';
 import { CommentsService } from './comments.service.js';
 import { CreateCommentDto } from './create-comment.dto.js';
+import { FilesInterceptor } from '@nestjs/platform-express';
 
 @Controller('comments')
 export class CommentsController {
   constructor(private readonly commentsService: CommentsService) {}
 
   @Post()
-  create(@Body() dto: CreateCommentDto) {
-    return this.commentsService.create(dto);
+  @UseInterceptors(
+    FilesInterceptor('files', 5, {
+      limits: {
+        fileSize: 5 * 1024 * 1024,
+      },
+    }),
+  )
+  create(
+    @Body() dto: CreateCommentDto,
+    @UploadedFiles() files: Express.Multer.File[],
+  ) {
+    return this.commentsService.create(dto, files ?? []);
   }
 
   @Get()

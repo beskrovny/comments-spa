@@ -1,12 +1,16 @@
-import { useState } from 'react';
-import type { Comment } from '../types/comment';
-import CommentForm from './CommentForm';
-import type { CommentFormValues } from '../schemas/commentSchema';
-import CommentContent from './CommentContent';
+import { useState } from "react";
+import type { Comment } from "../types/comment";
+import CommentForm from "./CommentForm";
+import type { CommentFormValues } from "../schemas/commentSchema";
+import CommentContent from "./CommentContent";
 
 interface CommentItemProps {
   comment: Comment;
-  onReply: (parentId: number, values: CommentFormValues) => Promise<void>;
+  onReply: (
+    parentId: number,
+    values: CommentFormValues,
+    files: File[],
+  ) => Promise<void>;
   isSubmitting?: boolean;
 }
 
@@ -17,8 +21,11 @@ function CommentItem({
 }: CommentItemProps) {
   const [isReplying, setIsReplying] = useState(false);
 
-  const handleReply = async (values: CommentFormValues) => {
-    await onReply(comment.id, values);
+  const handleReply = async (
+    values: CommentFormValues,
+    files: File[],
+  ) => {
+    await onReply(comment.id, values, files);
     setIsReplying(false);
   };
 
@@ -36,7 +43,7 @@ function CommentItem({
         type="button"
         onClick={() => setIsReplying((current) => !current)}
       >
-        {isReplying ? 'Отмена' : 'Ответить'}
+        {isReplying ? "Отмена" : "Ответить"}
       </button>
 
       {isReplying && (

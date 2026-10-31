@@ -19,32 +19,60 @@ function App() {
 
   const createMutation = useCreateComment();
 
-  const handleCreateComment = async (values: CommentFormValues) => {
-    await createMutation.mutateAsync({
-      ...values,
-      homePage: values.homePage || undefined,
-    });
-  };
-
-  const handleReply = async (parentId: number, values: CommentFormValues) => {
-    await createMutation.mutateAsync({
-      ...values,
-      homePage: values.homePage || undefined,
-      parentId,
-    });
-  };
-
   if (isPending) {
-    return <main className="app">Загрузка комментариев...</main>;
-  }
+  return (
+    <main className="app">
+      <h1>Комментарии</h1>
+      <p>Загрузка комментариев...</p>
+    </main>
+  );
+}
 
-  if (isError) {
-    return (
-      <main className="app">
-        <p>Ошибка загрузки: {error.message}</p>
-      </main>
-    );
-  }
+if (isError) {
+  return (
+    <main className="app">
+      <h1>Комментарии</h1>
+      <p className="form-error">{error.message}</p>
+    </main>
+  );
+}
+
+if (!data) {
+  return (
+    <main className="app">
+      <h1>Комментарии</h1>
+      <p>Комментарии не найдены.</p>
+    </main>
+  );
+}
+
+  const handleCreateComment = async (
+    values: CommentFormValues,
+    files: File[],
+  ) => {
+    await createMutation.mutateAsync({
+      payload: {
+        ...values,
+        homePage: values.homePage || undefined,
+      },
+      files,
+    });
+  };
+
+  const handleReply = async (
+    parentId: number,
+    values: CommentFormValues,
+    files: File[],
+  ) => {
+    await createMutation.mutateAsync({
+      payload: {
+        ...values,
+        homePage: values.homePage || undefined,
+        parentId,
+      },
+      files,
+    });
+  };
 
   return (
     <main className="app">
