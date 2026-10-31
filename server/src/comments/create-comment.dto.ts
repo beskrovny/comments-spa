@@ -8,11 +8,13 @@ import {
   MinLength,
   IsUrl,
   Matches,
+  IsNotEmpty,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateCommentDto {
   @IsString()
+  @IsNotEmpty()
   @MinLength(1)
   @MaxLength(100)
   @Matches(/^[a-zA-Z0-9]+$/, {
@@ -40,4 +42,12 @@ export class CreateCommentDto {
   @IsInt()
   @Min(1)
   parentId?: number;
+
+  @IsString()
+  @IsNotEmpty()
+  captchaId: string;
+
+  @IsString()
+  @IsNotEmpty()
+  captchaAnswer: string;
 }

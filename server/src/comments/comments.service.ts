@@ -6,13 +6,17 @@ import {
 import sanitizeHtml from 'sanitize-html';
 import { PrismaService } from '../prisma.service.js';
 import { CreateCommentDto } from './create-comment.dto.js';
+import { CaptchaService } from '../captcha/captcha.service.js';
 
 type SortField = 'userName' | 'email' | 'createdAt';
 type SortOrder = 'asc' | 'desc';
 
 @Injectable()
 export class CommentsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly captchaService: CaptchaService,
+  ) {}
 
   async create(dto: CreateCommentDto) {
     if (dto.parentId !== undefined) {
@@ -24,6 +28,9 @@ export class CommentsService {
       if (!parent) {
         throw new NotFoundException('Parent comment not found');
       }
+    }
+    if (!this.captchaService.verify(dto.captchaId, dto.captchaAnswer)) {
+      throw new BadRequestException('Invalid or expired CAPTCHA');
     }
 
     const sanitizedText = sanitizeHtml(dto.text, {

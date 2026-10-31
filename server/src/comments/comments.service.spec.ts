@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CommentsService } from './comments.service.js';
 import { PrismaService } from '../prisma.service.js';
+import { CaptchaService } from '../captcha/captcha.service.js';
 
 describe('CommentsService', () => {
   let service: CommentsService;
@@ -21,6 +22,7 @@ describe('CommentsService', () => {
             $transaction: vi.fn(),
           },
         },
+        CaptchaService,
       ],
     }).compile();
 
