@@ -13,14 +13,19 @@ import {
 import { CommentsService } from './comments.service.js';
 import { CreateCommentDto } from './create-comment.dto.js';
 import { FilesInterceptor } from '@nestjs/platform-express';
+import { UseFilters } from '@nestjs/common';
+import { MulterExceptionFilter } from './multer-exception.filter.js';
 
 @Controller('comments')
 export class CommentsController {
   constructor(private readonly commentsService: CommentsService) {}
 
+
   @Post()
+  @UseFilters(MulterExceptionFilter)
   @UseInterceptors(
     FilesInterceptor('files', 5, {
+      defParamCharset: 'utf8',
       limits: {
         fileSize: 5 * 1024 * 1024,
       },
@@ -32,6 +37,7 @@ export class CommentsController {
   ) {
     return this.commentsService.create(dto, files ?? []);
   }
+
 
   @Get()
   findAll(

@@ -10,11 +10,13 @@ import { CreateCommentDto } from './create-comment.dto.js';
 import { CaptchaService } from '../captcha/captcha.service.js';
 import { randomUUID } from 'node:crypto';
 import { basename, extname } from 'node:path';
+import sharp from 'sharp';
+import { CommentsGateway } from './comments.gateway.js';
 
 type SortField = 'userName' | 'email' | 'createdAt';
 type SortOrder = 'asc' | 'desc';
 
-function validateAttachment(file: Express.Multer.File) {
+async function validateAttachment(file: Express.Multer.File) {
   const originalName = basename(file.originalname.replace(/\\/g, '/'));
   const extension = extname(originalName).toLowerCase();
 
@@ -24,60 +26,6 @@ function validateAttachment(file: Express.Multer.File) {
 
   if (!file.buffer?.length) {
     throw new BadRequestException('Empty files are not allowed');
-  }
-
-  if (['.jpg', '.jpeg'].includes(extension)) {
-    const isJpeg =
-      file.buffer.length >= 3 &&
-      file.buffer[0] === 0xff &&
-      file.buffer[1] === 0xd8 &&
-      file.buffer[2] === 0xff;
-
-    if (!isJpeg) {
-      throw new BadRequestException('Invalid JPEG file');
-    }
-
-    return {
-      originalName,
-      storedName: randomUUID(),
-      mimeType: 'image/jpeg',
-      sizeBytes: file.size,
-      data: new Uint8Array(file.buffer),
-    };
-  }
-
-  if (extension === '.png') {
-    const signature = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
-    const isPng = signature.every((byte, index) => file.buffer[index] === byte);
-
-    if (!isPng) {
-      throw new BadRequestException('Invalid PNG file');
-    }
-
-    return {
-      originalName,
-      storedName: randomUUID(),
-      mimeType: 'image/png',
-      sizeBytes: file.size,
-      data: new Uint8Array(file.buffer),
-    };
-  }
-
-  if (extension === '.gif') {
-    const signature = file.buffer.toString('ascii', 0, 6);
-    const isGif = signature === 'GIF87a' || signature === 'GIF89a';
-
-    if (!isGif) {
-      throw new BadRequestException('Invalid GIF file');
-    }
-
-    return {
-      originalName,
-      storedName: randomUUID(),
-      mimeType: 'image/gif',
-      sizeBytes: file.size,
-      data: new Uint8Array(file.buffer),
-    };
   }
 
   if (extension === '.txt') {
@@ -95,12 +43,105 @@ function validateAttachment(file: Express.Multer.File) {
       originalName,
       storedName: randomUUID(),
       mimeType: 'text/plain',
-      sizeBytes: file.size,
+      sizeBytes: file.buffer.length,
       data: new Uint8Array(file.buffer),
     };
   }
 
-  throw new BadRequestException('Unsupported file type');
+  let mimeType: 'image/jpeg' | 'image/png' | 'image/gif';
+
+  if (['.jpg', '.jpeg'].includes(extension)) {
+    const isJpeg =
+      file.buffer.length >= 3 &&
+      file.buffer[0] === 0xff &&
+      file.buffer[1] === 0xd8 &&
+      file.buffer[2] === 0xff;
+
+    if (!isJpeg) {
+      throw new BadRequestException('Invalid JPEG file');
+    }
+
+    mimeType = 'image/jpeg';
+  } else if (extension === '.png') {
+    const signature = [
+      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+    ];
+
+    const isPng = signature.every(
+      (byte, index) => file.buffer[index] === byte,
+    );
+
+    if (!isPng) {
+      throw new BadRequestException('Invalid PNG file');
+    }
+
+    mimeType = 'image/png';
+  } else if (extension === '.gif') {
+    const signature = file.buffer.toString('ascii', 0, 6);
+    const isGif = signature === 'GIF87a' || signature === 'GIF89a';
+
+    if (!isGif) {
+      throw new BadRequestException('Invalid GIF file');
+    }
+
+    mimeType = 'image/gif';
+  } else {
+    throw new BadRequestException('Unsupported file type');
+  }
+
+  try {
+    const isGif = mimeType === 'image/gif';
+
+    const image = sharp(file.buffer, {
+      animated: isGif,
+      limitInputPixels: 100_000_000,
+    });
+
+    const metadata = await image.metadata();
+
+    if (!metadata.width || !metadata.height) {
+      throw new BadRequestException('Invalid image dimensions');
+    }
+
+    const frameHeight = metadata.pageHeight ?? metadata.height;
+    const pages = metadata.pages ?? 1;
+    const totalPixels = metadata.width * frameHeight * pages;
+
+    if (totalPixels > 100_000_000) {
+      throw new BadRequestException('Image contains too many pixels');
+    }
+
+    const processedImage = image.resize({
+      width: 320,
+      height: 240,
+      fit: 'inside',
+      withoutEnlargement: true,
+    });
+
+    let data: Buffer;
+
+    if (mimeType === 'image/jpeg') {
+      data = await processedImage.jpeg().toBuffer();
+    } else if (mimeType === 'image/png') {
+      data = await processedImage.png().toBuffer();
+    } else {
+      data = await processedImage.gif().toBuffer();
+    }
+
+    return {
+      originalName,
+      storedName: randomUUID(),
+      mimeType,
+      sizeBytes: data.length,
+      data: new Uint8Array(data),
+    };
+  } catch (error) {
+    if (error instanceof BadRequestException) {
+      throw error;
+    }
+
+    throw new BadRequestException('Unable to process image');
+  }
 }
 
 @Injectable()
@@ -108,6 +149,7 @@ export class CommentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly captchaService: CaptchaService,
+    private readonly commentsGateway: CommentsGateway,
   ) {}
 
   async create(dto: CreateCommentDto, files: Express.Multer.File[] = []) {
@@ -122,7 +164,9 @@ export class CommentsService {
       }
     }
 
-    const attachments = files.map(validateAttachment);
+const attachments = await Promise.all(
+  files.map((file) => validateAttachment(file)),
+);
 
     if (!this.captchaService.verify(dto.captchaId, dto.captchaAnswer)) {
       throw new BadRequestException('Invalid or expired CAPTCHA');
@@ -142,35 +186,39 @@ export class CommentsService {
       throw new BadRequestException('Comment must contain text');
     }
 
-    try {
-      return await this.prisma.comment.create({
-        data: {
-          userName: dto.userName,
-          email: dto.email,
-          homePage: dto.homePage,
-          text: sanitizedText,
-          parentId: dto.parentId,
-          attachments: attachments.length
-            ? {
-                create: attachments,
-              }
-            : undefined,
+try {
+  const comment = await this.prisma.comment.create({
+    data: {
+      userName: dto.userName,
+      email: dto.email,
+      homePage: dto.homePage,
+      text: sanitizedText,
+      parentId: dto.parentId,
+      attachments: attachments.length
+        ? {
+            create: attachments,
+          }
+        : undefined,
+    },
+    include: {
+      attachments: {
+        select: {
+          id: true,
+          originalName: true,
+          mimeType: true,
+          sizeBytes: true,
+          createdAt: true,
         },
-        include: {
-          attachments: {
-            select: {
-              id: true,
-              originalName: true,
-              mimeType: true,
-              sizeBytes: true,
-              createdAt: true,
-            },
-          },
-        },
-      });
-    } catch {
-      throw new BadRequestException('Unable to create comment');
-    }
+      },
+    },
+  });
+
+  this.commentsGateway.emitCommentCreated(comment);
+
+  return comment;
+} catch {
+  throw new BadRequestException('Unable to create comment');
+}
   }
 
   async findAll(

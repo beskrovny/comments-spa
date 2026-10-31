@@ -1,16 +1,23 @@
-import { useComments } from "./hooks/useComments";
+
+import { useComments, commentsQueryKey } from "./hooks/useComments";
 import { useCreateComment } from "./hooks/useCreateComment";
 import CommentItem from "./components/CommentItem";
 import CommentForm from "./components/CommentForm";
 import type { CommentFormValues } from "./schemas/commentSchema";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { CommentSortField, SortOrder } from "./types/comment";
 import "./App.css";
+import { getApiErrorMessage } from "./utils/getApiErrorMessage";
+import { useQueryClient } from "@tanstack/react-query";
+import { socket } from "./api/socket";
 
 function App() {
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<CommentSortField>("createdAt");
   const [order, setOrder] = useState<SortOrder>("desc");
+
+  const queryClient = useQueryClient();
+
   const { data, isPending, isError, error } = useComments({
     page,
     sortBy,
@@ -19,32 +26,22 @@ function App() {
 
   const createMutation = useCreateComment();
 
-  if (isPending) {
-  return (
-    <main className="app">
-      <h1>Комментарии</h1>
-      <p>Загрузка комментариев...</p>
-    </main>
-  );
-}
+  useEffect(() => {
+    socket.connect();
 
-if (isError) {
-  return (
-    <main className="app">
-      <h1>Комментарии</h1>
-      <p className="form-error">{error.message}</p>
-    </main>
-  );
-}
+    const handleCommentCreated = () => {
+      queryClient.invalidateQueries({
+        queryKey: commentsQueryKey,
+      });
+    };
 
-if (!data) {
-  return (
-    <main className="app">
-      <h1>Комментарии</h1>
-      <p>Комментарии не найдены.</p>
-    </main>
-  );
-}
+    socket.on("commentCreated", handleCommentCreated);
+
+    return () => {
+      socket.off("commentCreated", handleCommentCreated);
+      socket.disconnect();
+    };
+  }, [queryClient]);
 
   const handleCreateComment = async (
     values: CommentFormValues,
@@ -74,9 +71,37 @@ if (!data) {
     });
   };
 
+  if (isPending) {
+    return (
+      <main className="app">
+        <h1>Комментарии</h1>
+        <p>Загрузка комментариев...</p>
+      </main>
+    );
+  }
+
+  if (isError) {
+    return (
+      <main className="app">
+        <h1>Комментарии</h1>
+        <p className="form-error">{error.message}</p>
+      </main>
+    );
+  }
+
+  if (!data) {
+    return (
+      <main className="app">
+        <h1>Комментарии</h1>
+        <p>Комментарии не найдены.</p>
+      </main>
+    );
+  }
+
   return (
     <main className="app">
       <h1>Комментарии</h1>
+
       <div className="comments-controls">
         <label>
           Сортировать по:
@@ -108,7 +133,9 @@ if (!data) {
         </label>
       </div>
 
-      <p className="comments-count">Всего комментариев: {data.total}</p>
+      <p className="comments-count">
+        Всего комментариев: {data.total}
+      </p>
 
       <CommentForm
         onSubmit={handleCreateComment}
@@ -116,7 +143,9 @@ if (!data) {
       />
 
       {createMutation.isError && (
-        <p className="form-error">{createMutation.error.message}</p>
+        <p className="form-error">
+          {getApiErrorMessage(createMutation.error)}
+        </p>
       )}
 
       <section className="comments-list">
@@ -129,6 +158,7 @@ if (!data) {
           />
         ))}
       </section>
+
       <div className="pagination">
         <button
           type="button"

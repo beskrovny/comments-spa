@@ -3,6 +3,7 @@ import type { Comment } from "../types/comment";
 import CommentForm from "./CommentForm";
 import type { CommentFormValues } from "../schemas/commentSchema";
 import CommentContent from "./CommentContent";
+import CommentAttachments from './CommentAttachments';
 
 interface CommentItemProps {
   comment: Comment;
@@ -34,6 +35,7 @@ function CommentItem({
       <h3>{comment.userName}</h3>
 
       <CommentContent text={comment.text} />
+      <CommentAttachments attachments={comment.attachments ?? []} />
 
       <time dateTime={comment.createdAt}>
         {new Date(comment.createdAt).toLocaleString()}

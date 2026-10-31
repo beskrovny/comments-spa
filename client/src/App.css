@@ -144,3 +144,110 @@
   color: #dc2626;
   font-size: 14px;
 }
+
+/* ---------------------- */
+/* Comment Attachments    */
+/* ---------------------- */
+
+.comment-attachments {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.comment-attachment-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.comment-attachment-image-button {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: zoom-in;
+}
+
+.comment-attachment-image {
+  display: block;
+  max-width: 320px;
+  max-height: 240px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 6px;
+}
+
+.comment-attachment-files {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.comment-attachment-file {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.comment-attachment-file button {
+  padding: 5px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 5px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.attachment-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.85);
+}
+
+.attachment-modal > img {
+  display: block;
+  max-width: min(100%, 1200px);
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.attachment-modal-close {
+  position: absolute;
+  top: 16px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+  color: #0f172a;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.attachment-text-preview {
+  position: relative;
+  width: min(100%, 800px);
+  max-height: 80vh;
+  overflow: auto;
+  padding: 24px;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.attachment-text-preview pre {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: inherit;
+}
