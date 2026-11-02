@@ -98,40 +98,32 @@ function App() {
     );
   }
 
+  const handleSort = (field: CommentSortField) => {
+    if (field === sortBy) {
+      setOrder((current) => (current === "asc" ? "desc" : "asc"));
+    } else {
+      setSortBy(field);
+      setOrder(field === "createdAt" ? "desc" : "asc");
+    }
+    setPage(1);
+  };
+
+  const sortButtonLabel = (field: CommentSortField) => {
+    if (field === "createdAt") {
+      if (sortBy !== "createdAt") return "По дате";
+      return order === "desc" ? "По дате ↓ (LIFO)" : "По дате ↑";
+    }
+    if (field === "userName") {
+      if (sortBy !== "userName") return "По имени";
+      return order === "asc" ? "По имени ↑" : "По имени ↓";
+    }
+    if (sortBy !== "email") return "По E-mail";
+    return order === "asc" ? "По E-mail ↑" : "По E-mail ↓";
+  };
+
   return (
     <main className="app">
       <h1>Комментарии</h1>
-
-      <div className="comments-controls">
-        <label>
-          Сортировать по:
-          <select
-            value={sortBy}
-            onChange={(event) => {
-              setSortBy(event.target.value as CommentSortField);
-              setPage(1);
-            }}
-          >
-            <option value="userName">Имени</option>
-            <option value="email">Email</option>
-            <option value="createdAt">Дате</option>
-          </select>
-        </label>
-
-        <label>
-          Порядок:
-          <select
-            value={order}
-            onChange={(event) => {
-              setOrder(event.target.value as SortOrder);
-              setPage(1);
-            }}
-          >
-            <option value="asc">По возрастанию</option>
-            <option value="desc">По убыванию</option>
-          </select>
-        </label>
-      </div>
 
       <p className="comments-count">
         Всего комментариев: {data.total}
@@ -147,6 +139,41 @@ function App() {
           {getApiErrorMessage(createMutation.error)}
         </p>
       )}
+
+      <div className="sorting-panel">
+        <div className="sorting-panel-left">
+          <span className="sorting-label">Сортировка:</span>
+          <button
+            type="button"
+            className={
+              sortBy === "createdAt" ? "sort-button active" : "sort-button"
+            }
+            onClick={() => handleSort("createdAt")}
+          >
+            {sortButtonLabel("createdAt")}
+          </button>
+          <button
+            type="button"
+            className={
+              sortBy === "userName" ? "sort-button active" : "sort-button"
+            }
+            onClick={() => handleSort("userName")}
+          >
+            {sortButtonLabel("userName")}
+          </button>
+          <button
+            type="button"
+            className={sortBy === "email" ? "sort-button active" : "sort-button"}
+            onClick={() => handleSort("email")}
+          >
+            {sortButtonLabel("email")}
+          </button>
+        </div>
+        <div className="sorting-panel-right">
+          Страница {data.page} из {data.totalPages} (по {data.pageSize} на
+          страницу)
+        </div>
+      </div>
 
       <section className="comments-list">
         {data.items.map((comment) => (

@@ -41,6 +41,7 @@ function CommentForm({
   });
 
   const textAreaRef = useRef<HTMLTextAreaElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
@@ -105,12 +106,41 @@ function CommentForm({
     textarea.setSelectionRange(cursorPosition, cursorPosition);
   };
 
+  const syncFileInput = (files: File[]) => {
+    const input = fileInputRef.current;
+
+    if (!input) return;
+
+    if (files.length === 0) {
+      input.value = "";
+      return;
+    }
+
+    try {
+      const dataTransfer = new DataTransfer();
+      files.forEach((file) => dataTransfer.items.add(file));
+      input.files = dataTransfer.files;
+    } catch {
+      // DataTransfer is unavailable; React state remains the source of truth.
+      input.value = "";
+    }
+  };
+
+  const removeSelectedFile = (index: number) => {
+    setSelectedFiles((current) => {
+      const nextFiles = current.filter((_, i) => i !== index);
+      syncFileInput(nextFiles);
+      return nextFiles;
+    });
+  };
+
   const submitForm = async (values: CommentFormValues) => {
     try {
       await onSubmit(values, selectedFiles);
 
       reset();
       setSelectedFiles([]);
+      syncFileInput([]);
       setShowPreview(false);
     } finally {
       await loadCaptcha();
@@ -121,64 +151,80 @@ function CommentForm({
     <form className="comment-form" onSubmit={handleSubmit(submitForm)}>
       <h3>{parentId ? "Ответить на комментарий" : "Добавить комментарий"}</h3>
 
-      <div className="form-field">
-        <label htmlFor={`userName-${parentId ?? "root"}`}>Имя</label>
+      <div className="form-fields-row">
+        <div className="form-field">
+          <label htmlFor={`userName-${parentId ?? "root"}`}>
+            User Name (латиница и цифры) *
+          </label>
 
-        <input
-          id={`userName-${parentId ?? "root"}`}
-          {...register("userName")}
-          placeholder="Ваше имя"
-        />
+          <input
+            id={`userName-${parentId ?? "root"}`}
+            {...register("userName")}
+            placeholder="Ваше имя"
+          />
 
-        {errors.userName && <span>{errors.userName.message}</span>}
+          {errors.userName && <span>{errors.userName.message}</span>}
+        </div>
+
+        <div className="form-field">
+          <label htmlFor={`email-${parentId ?? "root"}`}>E-mail *</label>
+
+          <input
+            id={`email-${parentId ?? "root"}`}
+            type="email"
+            {...register("email")}
+            placeholder="example@mail.com"
+          />
+
+          {errors.email && <span>{errors.email.message}</span>}
+        </div>
+
+        <div className="form-field">
+          <label htmlFor={`homePage-${parentId ?? "root"}`}>
+            Home page (необязательно)
+          </label>
+
+          <input
+            id={`homePage-${parentId ?? "root"}`}
+            type="url"
+            {...register("homePage")}
+            placeholder="https://example.com"
+          />
+
+          {errors.homePage && <span>{errors.homePage.message}</span>}
+        </div>
       </div>
 
       <div className="form-field">
-        <label htmlFor={`email-${parentId ?? "root"}`}>Email</label>
-
-        <input
-          id={`email-${parentId ?? "root"}`}
-          type="email"
-          {...register("email")}
-          placeholder="example@mail.com"
-        />
-
-        {errors.email && <span>{errors.email.message}</span>}
-      </div>
-
-      <div className="form-field">
-        <label htmlFor={`homePage-${parentId ?? "root"}`}>
-          Домашняя страница (необязательно)
+        <label htmlFor={`text-${parentId ?? "root"}`}>
+          Сообщение (разрешены строго закрытые теги &lt;i&gt;, &lt;strong&gt;, &lt;code&gt;, &lt;a&gt;) *
         </label>
 
-        <input
-          id={`homePage-${parentId ?? "root"}`}
-          type="url"
-          {...register("homePage")}
-          placeholder="https://example.com"
-        />
+        <div className="editor-panel">
+          <div className="editor-toolbar">
+            <button type="button" onClick={() => insertTag("i")}>
+              i
+            </button>
 
-        {errors.homePage && <span>{errors.homePage.message}</span>}
-      </div>
+            <button type="button" onClick={() => insertTag("strong")}>
+              strong
+            </button>
 
-      <div className="form-field">
-        <label htmlFor={`text-${parentId ?? "root"}`}>Комментарий</label>
+            <button type="button" onClick={() => insertTag("code")}>
+              code
+            </button>
 
-        <div className="editor-toolbar">
-          <button type="button" onClick={() => insertTag("i")}>
-            i
-          </button>
+            <button type="button" onClick={() => insertTag("a")}>
+              a
+            </button>
+          </div>
 
-          <button type="button" onClick={() => insertTag("strong")}>
-            strong
-          </button>
-
-          <button type="button" onClick={() => insertTag("code")}>
-            code
-          </button>
-
-          <button type="button" onClick={() => insertTag("a")}>
-            a
+          <button
+            type="button"
+            onClick={() => setShowPreview((current) => !current)}
+            className="preview-button"
+          >
+            {showPreview ? "Скрыть предпросмотр" : "Предпросмотр"}
           </button>
         </div>
 
@@ -190,15 +236,9 @@ function CommentForm({
             textAreaRef.current = element;
           }}
           placeholder="Введите текст комментария"
+className="textarea-below-panel"
           rows={5}
         />
-
-        <button
-          type="button"
-          onClick={() => setShowPreview((current) => !current)}
-        >
-          {showPreview ? "Скрыть предпросмотр" : "Предпросмотр"}
-        </button>
 
         {showPreview && (
           <div className="comment-preview">
@@ -210,13 +250,67 @@ function CommentForm({
         {errors.text && <span>{errors.text.message}</span>}
       </div>
 
+      <div className="form-field captcha-block">
+        <label>CAPTCHA (код с картинки) *</label>
+
+        <div className="captcha-panel">
+          <div className="captcha-section">
+            <div className="captcha-visual">
+              <div className="captcha-controls">
+                {captcha && (
+                  <img
+                    src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(captcha.image)}`}
+                    alt="CAPTCHA"
+                  />
+                )}
+              </div>
+
+              <div className="captcha-answer-row">
+                <input
+                  id={`captchaAnswer-${parentId ?? "root"}`}
+                  className="captcha-answer"
+                  {...register("captchaAnswer")}
+                  placeholder="Проверочный код"
+                />
+
+                <button
+                  type="button"
+                  onClick={() => void loadCaptcha()}
+                  disabled={captchaLoading}
+                  aria-label="Обновить CAPTCHA"
+                >
+                  {captchaLoading ? "Загрузка..." : "↻"}
+                </button>
+              </div>
+            </div>
+
+            {captchaError && <span>{captchaError}</span>}
+          </div>
+
+          <div className="form-actions captcha-actions">
+            <button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Отправка..." : "Отправить"}
+            </button>
+
+            {onCancel && (
+              <button type="button" onClick={onCancel}>
+                Отмена
+              </button>
+            )}
+          </div>
+        </div>
+
+        <input type="hidden" {...register("captchaId")} />
+      </div>
+
       <div className="form-field">
         <label htmlFor={`attachments-${parentId ?? "root"}`}>
-          Прикрепить файлы
+          Прикрепить файл (JPG, PNG, GIF до 320x240 или TXT до 100 КБ)
         </label>
 
         <input
           id={`attachments-${parentId ?? "root"}`}
+          ref={fileInputRef}
           type="file"
           accept=".jpg,.jpeg,.gif,.png,.txt"
           multiple
@@ -226,70 +320,25 @@ function CommentForm({
         />
 
         {selectedFiles.length > 0 && (
-          <ul>
+          <ul className="attachment-list">
             {selectedFiles.map((file, index) => (
-              <li key={`${file.name}-${index}`}>
-                {file.name} ({Math.ceil(file.size / 1024)} KB)
+              <li
+                key={`${file.name}-${index}`}
+                className="attachment-selection-row"
+              >
+                <span className="attachment-file-info">
+                  {file.name} ({Math.ceil(file.size / 1024)} KB)
+                </span>
                 <button
                   type="button"
-                  onClick={() => {
-                    setSelectedFiles((current) =>
-                      current.filter((_, i) => i !== index),
-                    );
-                  }}
+                  className="attachment-remove-button"
+                  onClick={() => removeSelectedFile(index)}
                 >
                   Удалить
                 </button>
               </li>
             ))}
           </ul>
-        )}
-      </div>
-
-      <div className="form-field captcha-field">
-        <label>Проверочный код</label>
-
-        {captcha && (
-          <img
-            src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(captcha.image)}`}
-            alt="CAPTCHA"
-          />
-        )}
-
-        <button
-          type="button"
-          onClick={() => void loadCaptcha()}
-          disabled={captchaLoading}
-        >
-          {captchaLoading ? "Загрузка..." : "Обновить CAPTCHA"}
-        </button>
-
-        {captchaError && <span>{captchaError}</span>}
-      </div>
-      <input type="hidden" {...register("captchaId")} />
-
-      <div className="form-field">
-        <label htmlFor={`captchaAnswer-${parentId ?? "root"}`}>
-          Введите символы с изображения
-        </label>
-
-        <input
-          id={`captchaAnswer-${parentId ?? "root"}`}
-          {...register("captchaAnswer")}
-          placeholder="Проверочный код"
-        />
-
-        {errors.captchaAnswer && <span>{errors.captchaAnswer.message}</span>}
-      </div>
-      <div className="form-actions">
-        <button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Отправка..." : "Отправить"}
-        </button>
-
-        {onCancel && (
-          <button type="button" onClick={onCancel}>
-            Отмена
-          </button>
         )}
       </div>
     </form>

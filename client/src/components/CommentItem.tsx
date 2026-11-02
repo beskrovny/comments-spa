@@ -43,6 +43,7 @@ function CommentItem({
 
       <button
         type="button"
+        className="reply-button"
         onClick={() => setIsReplying((current) => !current)}
       >
         {isReplying ? "Отмена" : "Ответить"}
