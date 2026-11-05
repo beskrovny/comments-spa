@@ -18,8 +18,8 @@ export class CaptchaService {
 
         const captcha = svgCaptcha.create({
             size: 5,
-            noise: 3,
-            color: true,
+            noise: 0,
+            color: false,
             background: '#f2f2f2',
             ignoreChars: '0o1i',
         });

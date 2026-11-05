@@ -5,7 +5,7 @@ import { PrismaService } from '../prisma.service.js';
 export class AttachmentsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findOne(id: number) {
+  async findOne(id: number, variant: 'original' | 'thumbnail' = 'original') {
     const attachment = await this.prisma.attachment.findUnique({
       where: { id },
       select: {
@@ -13,6 +13,7 @@ export class AttachmentsService {
         originalName: true,
         mimeType: true,
         data: true,
+        thumbnailData: true,
       },
     });
 
@@ -20,6 +21,17 @@ export class AttachmentsService {
       throw new NotFoundException('Attachment not found');
     }
 
-    return attachment;
+    // For thumbnails: use thumbnailData if available, otherwise fall back to data
+    // (existing records only have the resized image in `data`)
+    const isImage = attachment.mimeType.startsWith('image/');
+    const data =
+      variant === 'thumbnail' && isImage
+        ? (attachment.thumbnailData ?? attachment.data)
+        : attachment.data;
+
+    return {
+      ...attachment,
+      data,
+    };
   }
 }

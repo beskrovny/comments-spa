@@ -1,0 +1,104 @@
+@media (max-width: 700px) {
+  .form-fields-row {
+    grid-template-columns: 1fr;
+  }
+
+  .captcha-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .captcha-row input {
+    width: 100%;
+  }
+
+  .captcha-panel {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .captcha-actions {
+    flex-direction: column;
+    align-self: stretch;
+    align-items: stretch;
+    width: 100%;
+    margin-top: 0;
+  }
+
+  .captcha-actions button {
+    width: 100%;
+  }
+
+  .editor-panel {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .editor-toolbar {
+    justify-content: flex-start;
+  }
+
+  .preview-button {
+    align-self: flex-start;
+  }
+
+  .comment-replies {
+    margin-left: 0;
+    padding-left: 16px;
+    border-left: 1px solid var(--border-color);
+  }
+
+  .comment-replies--flat {
+    margin-left: 0;
+    border-left: 0;
+  }
+}
+
+@media (max-width: 820px) {
+  .reply-modal .form-fields-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .reply-modal {
+    padding: 12px;
+    align-items: flex-start;
+  }
+
+  .reply-modal-panel {
+    max-height: none;
+  }
+
+  .reply-modal-header {
+    padding: 16px;
+  }
+
+  .reply-modal .comment-form {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 700px) {
+  .attachment-modal-nav {
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+  }
+
+  .attachment-modal-nav-prev {
+    left: 6px;
+  }
+
+  .attachment-modal-nav-next {
+    right: 6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lightbox-img-next,
+  .lightbox-img-prev {
+    animation: none;
+  }
+}

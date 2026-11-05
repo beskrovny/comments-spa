@@ -10,7 +10,7 @@ import { AttachmentsModule } from './attachments/attachments.module.js';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ envFilePath: '.env.example' }),
+    ConfigModule.forRoot({ envFilePath: '../.env.example' }),
     PrismaModule,
     CommentsModule,
     CaptchaModule,

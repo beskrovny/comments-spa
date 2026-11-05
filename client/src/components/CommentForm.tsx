@@ -11,14 +11,12 @@ import { getCaptcha, type CaptchaResponse } from "../api/captcha";
 interface CommentFormProps {
   parentId?: number;
   onSubmit: (values: CommentFormValues, files: File[]) => void | Promise<void>;
-  onCancel?: () => void;
   isSubmitting?: boolean;
 }
 
 function CommentForm({
   parentId,
   onSubmit,
-  onCancel,
   isSubmitting = false,
 }: CommentFormProps) {
   const {
@@ -291,12 +289,6 @@ className="textarea-below-panel"
             <button type="submit" disabled={isSubmitting}>
               {isSubmitting ? "Отправка..." : "Отправить"}
             </button>
-
-            {onCancel && (
-              <button type="button" onClick={onCancel}>
-                Отмена
-              </button>
-            )}
           </div>
         </div>
 
@@ -304,7 +296,7 @@ className="textarea-below-panel"
       </div>
 
       <div className="form-field">
-        <label htmlFor={`attachments-${parentId ?? "root"}`}>
+        <label id={`attachments-label-${parentId ?? "root"}`}>
           Прикрепить файл (JPG, PNG, GIF до 320x240 или TXT до 100 КБ)
         </label>
 
@@ -314,10 +306,28 @@ className="textarea-below-panel"
           type="file"
           accept=".jpg,.jpeg,.gif,.png,.txt"
           multiple
+          className="visually-hidden"
+          aria-labelledby={`attachments-label-${parentId ?? "root"} attachments-button-${parentId ?? "root"}`}
           onChange={(event) => {
             setSelectedFiles(Array.from(event.target.files ?? []));
           }}
         />
+
+        <div className="choose-files-container">
+          <button
+            type="button"
+            id={`attachments-button-${parentId ?? "root"}`}
+            className="choose-files-button"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            Выбрать файлы
+          </button>
+          <span className="files-status">
+            {selectedFiles.length === 0
+              ? "Файл не выбран"
+              : `Выбрано файлов: ${selectedFiles.length}`}
+          </span>
+        </div>
 
         {selectedFiles.length > 0 && (
           <ul className="attachment-list">

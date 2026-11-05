@@ -3,6 +3,12 @@ generator client {
   output   = "../src/generated/prisma"
 }
 
+generator erd {
+  provider = "prisma-erd-generator"
+  renderer = "graphviz"
+  output   = "./ERD.svg"
+}
+
 datasource db {
   provider = "postgresql"
 }
@@ -37,6 +43,7 @@ model Attachment {
   sizeBytes    Int      @map("size_bytes")
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   data         Bytes    @db.ByteA
+  thumbnailData Bytes?  @map("thumbnail_data") @db.ByteA
 
   comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
 

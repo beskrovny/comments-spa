@@ -10,3 +10,8 @@ Thumbs.db
 .env.*
 !.env.example
 task.md
+task/
+doc/
+# Generated Prisma Client
+server/src/generated/
+

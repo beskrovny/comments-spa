@@ -1,20 +1,126 @@
-
 import {
   BadRequestException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import sanitizeHtml from 'sanitize-html';
+import { Tokenizer } from 'htmlparser2';
 import { PrismaService } from '../prisma.service.js';
 import { CreateCommentDto } from './create-comment.dto.js';
 import { CaptchaService } from '../captcha/captcha.service.js';
 import { randomUUID } from 'node:crypto';
 import { basename, extname } from 'node:path';
 import sharp from 'sharp';
+import { fileTypeFromBuffer } from 'file-type';
 import { CommentsGateway } from './comments.gateway.js';
 
 type SortField = 'userName' | 'email' | 'createdAt';
 type SortOrder = 'asc' | 'desc';
+
+const ALLOWED_TAGS = new Set(['i', 'strong', 'code', 'a']);
+const ALLOWED_ATTRIBUTES: Record<string, Set<string>> = {
+  a: new Set(['href', 'title']),
+};
+
+function validateHtmlStructure(text: string): void {
+  const stack: string[] = [];
+  let error: string | undefined;
+
+  let currentAttrName = '';
+  const currentAttrs: Record<string, string> = {};
+
+  const tokenizer = new Tokenizer(
+    { decodeEntities: true },
+    {
+      onopentagname(start: number, end: number) {
+        if (error) return;
+        const tagName = text.substring(start, end);
+
+        if (!ALLOWED_TAGS.has(tagName)) {
+          error = `Disallowed HTML tag: <${tagName}>`;
+          return;
+        }
+
+        stack.push(tagName);
+      },
+      onopentagend() {
+        if (error) return;
+        const allowedAttrs = ALLOWED_ATTRIBUTES[stack[stack.length - 1]];
+        for (const attrName of Object.keys(currentAttrs)) {
+          if (!allowedAttrs || !allowedAttrs.has(attrName)) {
+            error = `Disallowed attribute: ${attrName} on <${stack[stack.length - 1]}>`;
+            return;
+          }
+        }
+        Object.keys(currentAttrs).forEach((key) => delete currentAttrs[key]);
+      },
+      onclosetag(start: number, end: number) {
+        if (error) return;
+        const tagName = text.substring(start, end);
+
+        if (stack.length === 0) {
+          error = `Unexpected closing tag: </${tagName}>`;
+          return;
+        }
+
+        const lastOpened = stack.pop();
+        if (lastOpened !== tagName) {
+          error = `Mismatched closing tag: </${tagName}> does not match <${lastOpened}>`;
+          return;
+        }
+      },
+      onattribname(start: number, end: number) {
+        if (error) return;
+        currentAttrName = text.substring(start, end);
+      },
+      onattribdata(start: number, end: number) {
+        if (error) return;
+        currentAttrs[currentAttrName] = text.substring(start, end);
+      },
+      onattribend() {
+        // Attribute value complete, already stored in onattribdata
+      },
+      ontext() {
+        // Text content doesn't affect validation
+      },
+      onattribentity() {
+        // Entity in attribute value, not relevant for validation
+      },
+      oncdata() {
+        // CDATA sections not expected in comment text
+      },
+      oncomment() {
+        // HTML comments not expected in comment text
+      },
+      ondeclaration() {
+        // DOCTYPE declarations not expected in comment text
+      },
+      onprocessinginstruction() {
+        // Processing instructions not expected in comment text
+      },
+      onselfclosingtag() {
+        // Self-closing tags are treated as open+close pair
+      },
+      ontextentity() {
+        // Text entities not relevant for validation
+      },
+      onend() {
+        if (error) return;
+
+        if (stack.length > 0) {
+          error = `Missing closing tag: </${stack[stack.length - 1]}>`;
+        }
+      },
+    }
+  );
+
+  tokenizer.write(text);
+  tokenizer.end();
+
+  if (error) {
+    throw new BadRequestException(error);
+  }
+}
 
 async function validateAttachment(file: Express.Multer.File) {
   const originalName = basename(file.originalname.replace(/\\/g, '/'));
@@ -50,43 +156,25 @@ async function validateAttachment(file: Express.Multer.File) {
 
   let mimeType: 'image/jpeg' | 'image/png' | 'image/gif';
 
-  if (['.jpg', '.jpeg'].includes(extension)) {
-    const isJpeg =
-      file.buffer.length >= 3 &&
-      file.buffer[0] === 0xff &&
-      file.buffer[1] === 0xd8 &&
-      file.buffer[2] === 0xff;
+  const detected = await fileTypeFromBuffer(file.buffer);
 
-    if (!isJpeg) {
-      throw new BadRequestException('Invalid JPEG file');
-    }
-
-    mimeType = 'image/jpeg';
-  } else if (extension === '.png') {
-    const signature = [
-      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
-    ];
-
-    const isPng = signature.every(
-      (byte, index) => file.buffer[index] === byte,
-    );
-
-    if (!isPng) {
-      throw new BadRequestException('Invalid PNG file');
-    }
-
-    mimeType = 'image/png';
-  } else if (extension === '.gif') {
-    const signature = file.buffer.toString('ascii', 0, 6);
-    const isGif = signature === 'GIF87a' || signature === 'GIF89a';
-
-    if (!isGif) {
-      throw new BadRequestException('Invalid GIF file');
-    }
-
-    mimeType = 'image/gif';
-  } else {
+  if (!detected || !['image/jpeg', 'image/png', 'image/gif'].includes(detected.mime)) {
     throw new BadRequestException('Unsupported file type');
+  }
+
+  mimeType = detected.mime as 'image/jpeg' | 'image/png' | 'image/gif';
+
+  const expectedMimeType =
+    extension === '.jpg' || extension === '.jpeg'
+      ? 'image/jpeg'
+      : extension === '.png'
+        ? 'image/png'
+        : extension === '.gif'
+          ? 'image/gif'
+          : null;
+
+  if (!expectedMimeType || mimeType !== expectedMimeType) {
+    throw new BadRequestException('File extension does not match image format');
   }
 
   try {
@@ -118,22 +206,23 @@ async function validateAttachment(file: Express.Multer.File) {
       withoutEnlargement: true,
     });
 
-    let data: Buffer;
+    let thumbnailData: Buffer;
 
     if (mimeType === 'image/jpeg') {
-      data = await processedImage.jpeg().toBuffer();
+      thumbnailData = await processedImage.jpeg().toBuffer();
     } else if (mimeType === 'image/png') {
-      data = await processedImage.png().toBuffer();
+      thumbnailData = await processedImage.png().toBuffer();
     } else {
-      data = await processedImage.gif().toBuffer();
+      thumbnailData = await processedImage.gif().toBuffer();
     }
 
     return {
       originalName,
       storedName: randomUUID(),
       mimeType,
-      sizeBytes: data.length,
-      data: new Uint8Array(data),
+      sizeBytes: file.buffer.length,
+      data: new Uint8Array(file.buffer),
+      thumbnailData: new Uint8Array(thumbnailData),
     };
   } catch (error) {
     if (error instanceof BadRequestException) {
@@ -171,6 +260,8 @@ const attachments = await Promise.all(
     if (!this.captchaService.verify(dto.captchaId, dto.captchaAnswer)) {
       throw new BadRequestException('Invalid or expired CAPTCHA');
     }
+
+    validateHtmlStructure(dto.text);
 
     const sanitizedText = sanitizeHtml(dto.text, {
       allowedTags: ['i', 'strong', 'code', 'a'],
@@ -216,8 +307,11 @@ try {
   this.commentsGateway.emitCommentCreated(comment);
 
   return comment;
-} catch {
-  throw new BadRequestException('Unable to create comment');
+} catch (error) {
+  if (error instanceof BadRequestException) {
+    throw error;
+  }
+  throw error;
 }
   }
 
@@ -229,7 +323,7 @@ try {
     const pageSize = 25;
     const skip = (page - 1) * pageSize;
 
-    const [roots, total, allReplies] = await this.prisma.$transaction([
+    const [roots, total] = await this.prisma.$transaction([
       this.prisma.comment.findMany({
         where: { parentId: null },
         orderBy: { [sortBy]: order },
@@ -250,22 +344,96 @@ try {
       this.prisma.comment.count({
         where: { parentId: null },
       }),
-      this.prisma.comment.findMany({
-        where: { parentId: { not: null } },
-        orderBy: { createdAt: 'asc' },
-        include: {
-          attachments: {
-            select: {
-              id: true,
-              originalName: true,
-              mimeType: true,
-              sizeBytes: true,
-              createdAt: true,
-            },
-          },
-        },
-      }),
     ]);
+
+    let allReplies: Array<{
+      id: number;
+      parentId: number | null;
+      userName: string;
+      email: string;
+      homePage: string | null;
+      text: string;
+      createdAt: Date;
+      attachments: Array<{
+        id: number;
+        originalName: string;
+        mimeType: string;
+        sizeBytes: number;
+        createdAt: Date;
+      }>;
+    }> = [];
+
+    if (roots.length > 0) {
+      const rootIds = roots.map((r) => r.id);
+      const placeholders = rootIds.map((_, i) => `$${i + 1}`).join(', ');
+
+      const replyRows = await this.prisma.$queryRawUnsafe(
+        `
+        WITH RECURSIVE comment_tree AS (
+          SELECT id, parent_id, user_name, email, home_page, text, created_at
+          FROM comments
+          WHERE parent_id IN (${placeholders})
+
+          UNION ALL
+
+          SELECT c.id, c.parent_id, c.user_name, c.email, c.home_page, c.text, c.created_at
+          FROM comments c
+          INNER JOIN comment_tree ct ON c.parent_id = ct.id
+        )
+        SELECT * FROM comment_tree ORDER BY created_at ASC
+        `,
+        ...rootIds,
+      ) as Array<{
+        id: number;
+        parent_id: number | null;
+        user_name: string;
+        email: string;
+        home_page: string | null;
+        text: string;
+        created_at: Date;
+      }>;
+
+      allReplies = replyRows.map((r) => ({
+        id: r.id,
+        parentId: r.parent_id,
+        userName: r.user_name,
+        email: r.email,
+        homePage: r.home_page,
+        text: r.text,
+        createdAt: r.created_at,
+        attachments: [],
+      }));
+
+      const replyIds = allReplies.map((r) => r.id);
+      if (replyIds.length > 0) {
+        const attachments = await this.prisma.attachment.findMany({
+          where: { commentId: { in: replyIds } },
+          select: {
+            id: true,
+            commentId: true,
+            originalName: true,
+            mimeType: true,
+            sizeBytes: true,
+            createdAt: true,
+          },
+        });
+
+        const attachmentsByCommentId = new Map<
+          number,
+          typeof attachments[number][]
+        >();
+        for (const att of attachments) {
+          if (!attachmentsByCommentId.has(att.commentId)) {
+            attachmentsByCommentId.set(att.commentId, []);
+          }
+          attachmentsByCommentId.get(att.commentId)!.push(att);
+        }
+
+        for (const reply of allReplies) {
+          reply.attachments = attachmentsByCommentId.get(reply.id) ?? [];
+        }
+      }
+    }
 
     type CommentNode = (typeof roots)[number] & {
       replies: CommentNode[];

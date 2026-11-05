@@ -5,16 +5,17 @@ import CommentItem from "./components/CommentItem";
 import CommentForm from "./components/CommentForm";
 import type { CommentFormValues } from "./schemas/commentSchema";
 import { useState, useEffect } from "react";
-import type { CommentSortField, SortOrder } from "./types/comment";
-import "./App.css";
+import type { Comment, CommentSortField, SortOrder } from "./types/comment";
 import { getApiErrorMessage } from "./utils/getApiErrorMessage";
 import { useQueryClient } from "@tanstack/react-query";
 import { socket } from "./api/socket";
+
 
 function App() {
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<CommentSortField>("createdAt");
   const [order, setOrder] = useState<SortOrder>("desc");
+  const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
 
   const queryClient = useQueryClient();
 
@@ -119,7 +120,50 @@ function App() {
     }
     if (sortBy !== "email") return "По E-mail";
     return order === "asc" ? "По E-mail ↑" : "По E-mail ↓";
+
+
   };
+  const handleToggle = (id: number) => {
+    setExpandedIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleExpandRoot = (rootId: number) => {
+    const root = data.items.find(c => c.id === rootId);
+    if (!root) return;
+    const all = new Set<number>([rootId]);
+    const collect = (comments: Comment[]) => {
+      comments.forEach(c => {
+        all.add(c.id);
+        if (c.replies) collect(c.replies);
+      });
+    };
+    collect(root.replies ?? []);
+    setExpandedIds(prev => new Set([...prev, ...all]));
+  };
+
+  const handleCollapseRoot = (rootId: number) => {
+    const root = data.items.find(c => c.id === rootId);
+    if (!root) return;
+    const all = new Set<number>([rootId]);
+    const collect = (comments: Comment[]) => {
+      comments.forEach(c => {
+        all.add(c.id);
+        if (c.replies) collect(c.replies);
+      });
+    };
+    collect(root.replies ?? []);
+    setExpandedIds(prev => {
+      const next = new Set(prev);
+      all.forEach(id => next.delete(id));
+      return next;
+    });
+  };
+
 
   return (
     <main className="app">
@@ -182,6 +226,10 @@ function App() {
             comment={comment}
             onReply={handleReply}
             isSubmitting={createMutation.isPending}
+            expandedIds={expandedIds}
+            onToggle={handleToggle}
+            handleExpandRoot={handleExpandRoot}
+            handleCollapseRoot={handleCollapseRoot}
           />
         ))}
       </section>
@@ -212,3 +260,7 @@ function App() {
 }
 
 export default App;
+
+
+
+

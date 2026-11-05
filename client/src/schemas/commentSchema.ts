@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { validateHtml } from "../utils/htmlValidator";
 
 export const commentSchema = z.object({
   userName: z
@@ -31,7 +32,15 @@ export const commentSchema = z.object({
     .string()
     .trim()
     .min(1, "Введите текст комментария")
-    .max(10000, "Максимум 10000 символов"),
+    .max(10000, "Максимум 10000 символов")
+    .superRefine((value, ctx) => {
+      const result = validateHtml(value);
+      if (result.valid) return;
+      ctx.addIssue({
+        code: "custom",
+        message: result.error || "Некорректный HTML в комментарии",
+      });
+    }),
 
   captchaId: z.string().min(1, "CAPTCHA не загружена"),
 

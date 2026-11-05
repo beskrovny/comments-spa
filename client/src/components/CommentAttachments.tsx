@@ -8,6 +8,8 @@ interface CommentAttachmentsProps {
 
 function CommentAttachments({ attachments }: CommentAttachmentsProps) {
   const [selectedImage, setSelectedImage] = useState<Attachment | null>(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [navDirection, setNavDirection] = useState<'next' | 'prev' | null>(null);
   const [textContent, setTextContent] = useState<string | null>(null);
   const [isTextLoading, setIsTextLoading] = useState(false);
   const [textError, setTextError] = useState<string | null>(null);
@@ -20,6 +22,12 @@ function CommentAttachments({ attachments }: CommentAttachmentsProps) {
     (file) => file.mimeType === 'text/plain',
   );
 
+  const navigateTo = (index: number, direction: 'next' | 'prev') => {
+    setNavDirection(direction);
+    setCurrentImageIndex(index);
+    setSelectedImage(imageAttachments[index]);
+  };
+
   useEffect(() => {
     if (!selectedImage && textContent === null) return;
 
@@ -27,13 +35,19 @@ function CommentAttachments({ attachments }: CommentAttachmentsProps) {
       if (event.key === 'Escape') {
         setSelectedImage(null);
         setTextContent(null);
+      } else if (event.key === 'ArrowRight') {
+        const nextIndex = (currentImageIndex + 1) % imageAttachments.length;
+        navigateTo(nextIndex, 'next');
+      } else if (event.key === 'ArrowLeft') {
+        const prevIndex = (currentImageIndex - 1 + imageAttachments.length) % imageAttachments.length;
+        navigateTo(prevIndex, 'prev');
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
 
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedImage, textContent]);
+  }, [selectedImage, textContent, currentImageIndex, imageAttachments.length]);
 
 const openTextFile = async (file: Attachment) => {
   setIsTextLoading(true);
@@ -65,11 +79,15 @@ const openTextFile = async (file: Attachment) => {
               key={file.id}
               type="button"
               className="comment-attachment-image-button"
-              onClick={() => setSelectedImage(file)}
+              onClick={() => {
+              setNavDirection(null);
+              setCurrentImageIndex(imageAttachments.indexOf(file));
+              setSelectedImage(file);
+            }}
               aria-label={`Открыть изображение ${file.originalName}`}
             >
               <img
-                src={`${http.defaults.baseURL}/attachments/${file.id}`}
+                src={`${http.defaults.baseURL}/attachments/${file.id}?variant=thumbnail`}
                 alt={file.originalName}
                 className="comment-attachment-image"
               />
@@ -111,11 +129,59 @@ const openTextFile = async (file: Attachment) => {
             ×
           </button>
 
-          <img
-            src={`${http.defaults.baseURL}/attachments/${selectedImage.id}`}
-            alt={selectedImage.originalName}
-            onClick={(event) => event.stopPropagation()}
-          />
+          <div className="attachment-modal-content" onClick={(e) => e.stopPropagation()}>
+            {imageAttachments.length > 1 && (
+              <button
+                type="button"
+                className="attachment-modal-nav attachment-modal-nav-prev"
+                aria-label="Предыдущее изображение"
+                onClick={() => {
+                  const prevIndex =
+                    (currentImageIndex - 1 + imageAttachments.length) %
+                    imageAttachments.length;
+                  navigateTo(prevIndex, 'prev');
+                }}
+              >
+                ←
+              </button>
+            )}
+
+            <img
+              key={selectedImage.id}
+              className={
+                navDirection === 'next'
+                  ? 'lightbox-img-next'
+                  : navDirection === 'prev'
+                    ? 'lightbox-img-prev'
+                    : undefined
+              }
+              style={{ maxWidth: '100%', maxHeight: '80vh', height: 'auto' }}
+              src={`${http.defaults.baseURL}/attachments/${selectedImage.id}?variant=original`}
+              alt={selectedImage.originalName}
+              onClick={(event) => event.stopPropagation()}
+            />
+
+            {imageAttachments.length > 1 && (
+              <button
+                type="button"
+                className="attachment-modal-nav attachment-modal-nav-next"
+                aria-label="Следующее изображение"
+                onClick={() => {
+                  const nextIndex = (currentImageIndex + 1) %
+                    imageAttachments.length;
+                  navigateTo(nextIndex, 'next');
+                }}
+              >
+                →
+              </button>
+            )}
+
+            {imageAttachments.length > 1 && (
+              <span className="attachment-modal-nav-counter">
+                {currentImageIndex + 1} / {imageAttachments.length}
+              </span>
+            )}
+          </div>
         </div>
       )}
 

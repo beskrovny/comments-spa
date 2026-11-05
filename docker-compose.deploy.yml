@@ -1,0 +1,62 @@
+name: comments-spa-deploy
+
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: comments-deploy-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: comments_deploy_user
+      POSTGRES_PASSWORD: comments_deploy_password
+      POSTGRES_DB: comments_deploy_db
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_deploy_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U comments_deploy_user -d comments_deploy_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - comments-deploy-network
+
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile.deploy
+    container_name: comments-deploy-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: "postgresql://comments_deploy_user:comments_deploy_password@db:5432/comments_deploy_db?schema=public"
+      PORT: 3020
+    expose:
+      - "3020"
+    networks:
+      - comments-deploy-network
+
+  frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile.deploy
+    container_name: comments-deploy-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_started
+    environment:
+      VITE_API_URL: /api
+    ports:
+      - "8080:80"
+    networks:
+      - comments-deploy-network
+
+volumes:
+  postgres_deploy_data:
+
+networks:
+  comments-deploy-network:
+    driver: bridge
