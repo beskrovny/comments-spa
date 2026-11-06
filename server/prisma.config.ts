@@ -7,6 +7,6 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env.DATABASE_URL ?? "postgresql://comments_user:comments_password@localhost:5433/comments_db?schema=public",
+    url: process.env.DIRECT_URL ?? process.env.DATABASE_URL ?? "postgresql://comments_user:comments_password@localhost:5433/comments_db?schema=public",
   },
 });
